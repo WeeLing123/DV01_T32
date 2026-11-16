@@ -1,12 +1,117 @@
-<!DOCTYPE` html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>G32_Data_Visualisation_Group_Project</title>
     <meta name="author" content="Jackson Jue Sheng Tay, Wee Ling Thong">
-    <link rel="stylesheet" href="styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+    <script src="js/q3_map.js"></script>
 
 </head>
 <body>
-    <h1>Feature branch</h1>
+    <!--Sidebar to switch different chart-->
+    <nav class="sidebar">
+        <h2>Road Crash Analysis</h2>
+        <ul class="nav-list">
+            <!-- 注意这里加了参数 this，用来准确获取当前被点击的按钮 -->
+            <li><button class="nav-btn active" onclick="switchSection('Q1', this)">Q1: National Trend</button></li>
+            <li><button class="nav-btn" onclick="switchSection('Q2', this)">Q2: Road Users</button></li>
+            <li><button class="nav-btn" onclick="switchSection('Q3', this)">Q3: Jurisdictions & Map</button></li>
+            <li><button class="nav-btn" onclick="switchSection('Q4', this)">Q4: First Nations</button></li>
+            <li><button class="nav-btn" onclick="switchSection('Q5', this)">Q5: Injury Severity</button></li>
+        </ul>
+    </nav>
+
+    <!-- Main chart -->
+    <main class="main-content">
+        <div class="card">
+            <!-- 头部：标题与筛选器 -->
+            <div class="card-header">
+                <h2 id="chart-title">Q1: National Trend (2011-2021)</h2>
+                
+                <!-- Top-right corner for filter feature (修复了 class 名为 filter-container) -->
+                <div class="filter-container">
+                    <label for="jurisdiction-filter">Filter: </label>
+                    <select id="jurisdiction-filter" onchange="updateFilter()">
+                        <option value="ALL">National Total</option>
+                        <option value="VIC">Victoria</option>
+                        <option value="NSW">New South Wales</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- D3 图表渲染挂载点 -->
+            <div id="chart-container"></div>
+        </div>
+    </main>
+
+    <script>
+        // 默认加载 Q1
+        let currentSection = 'Q1';
+        loadChart('Q1');
+
+        // 切换侧边栏菜单项
+        function switchSection(section, btnElement) {
+            currentSection = section;
+            
+            // 切换按钮高亮状态
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) {
+                btnElement.classList.add('active');
+            }
+
+            // 改变大标题
+            document.getElementById('chart-title').innerText = `${section} Visualization`;
+
+            // 加载对应图表
+            loadChart(section);
+        }
+
+        function loadChart(section) {
+            // 清空当前图表容器
+            d3.select("#chart-container").html("");
+
+            // 根据不同的 Q 加载对应的逻辑
+            if (section === 'Q1') {
+                drawQ1LineChart();
+            } else if (section === 'Q2') {
+                drawQ2PieChart();
+            } else if (section === 'Q3') {
+                drawQ3Map();
+            } else if (section === 'Q4') {
+                drawQ4BarChart();
+            } else if (section === 'Q5') {
+                drawQ5BoxPlot();
+            }
+        }
+
+        function drawQ1LineChart() {
+            const container = d3.select("#chart-container");
+            container.append("p").text("Loading Q1 Line Chart from KNIME CSV...");
+        }
+
+        function drawQ2PieChart() {
+            const container = d3.select("#chart-container");
+            container.append("p").text("Loading Q2 Pie Chart...");
+        }
+
+        function drawQ4BarChart() {
+            const container = d3.select("#chart-container");
+            container.append("p").text("Loading Q4 First Nations Bar Chart...");
+        }
+
+        function drawQ5BoxPlot() {
+            const container = d3.select("#chart-container");
+            container.append("p").text("Loading Q5 Severity Boxplot...");
+        }
+
+        function updateFilter() {
+            const selectedVal = document.getElementById("jurisdiction-filter").value;
+            console.log("User selected filter for " + currentSection + ":", selectedVal);
+        }
+    </script>
+</body>
+</html>
