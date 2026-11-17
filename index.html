@@ -6,112 +6,174 @@
     <title>G32_Data_Visualisation_Group_Project</title>
     <meta name="author" content="Jackson Jue Sheng Tay, Wee Ling Thong">
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-    <script src="js/q3_map.js"></script>
-
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Import the JS chart files and data loader. -->
+    <script src="js/q1_line_chart.js" ></script>
+    <script src="js/q2_pie_chart.js" ></script>
+    <script src="js/q3_map.js" ></script>
+    <script src="js/q4_bar_chart.js" ></script>
+    <script src="js/q5_box_plot.js" ></script>
+    <script src="js/load-data.js"></script>
 </head>
 <body>
-    <!--Sidebar to switch different chart-->
-    <nav class="sidebar">
-        <h2>Road Crash Analysis</h2>
-        <ul class="nav-list">
-            <!-- 注意这里加了参数 this，用来准确获取当前被点击的按钮 -->
-            <li><button class="nav-btn active" onclick="switchSection('Q1', this)">Q1: National Trend</button></li>
-            <li><button class="nav-btn" onclick="switchSection('Q2', this)">Q2: Road Users</button></li>
-            <li><button class="nav-btn" onclick="switchSection('Q3', this)">Q3: Jurisdictions & Map</button></li>
-            <li><button class="nav-btn" onclick="switchSection('Q4', this)">Q4: First Nations</button></li>
-            <li><button class="nav-btn" onclick="switchSection('Q5', this)">Q5: Injury Severity</button></li>
-        </ul>
-    </nav>
+    <div class="app-container">
+        <!-- Left Fixed Section Navigation -->
+        <aside class="sidebar">
+        <div class="logo">
+            <h2>BITRE Analytics</h2>
+            <p>Road Safety Policy Story (2011-2021)</p>
+        </div>
+        <nav class="nav-links">
+            <a href="#section-q1" class="active">1. National Trend (Q1)</a>
+            <a href="#section-q2">2. Road Users (Q2)</a>
+            <a href="#section-q3">3. Jurisdictions (Q3)</a>
+            <a href="#section-q4">4. First Nations Focus (Q4)</a>
+            <a href="#section-q5">5. Injury Severity & Burden (Q5)</a>
+        </nav>
+        </aside>
 
-    <!-- Main chart -->
-    <main class="main-content">
-        <div class="card">
-            <!-- 头部：标题与筛选器 -->
-            <div class="card-header">
-                <h2 id="chart-title">Q1: National Trend (2011-2021)</h2>
-                
-                <!-- Top-right corner for filter feature (修复了 class 名为 filter-container) -->
-                <div class="filter-container">
-                    <label for="jurisdiction-filter">Filter: </label>
-                    <select id="jurisdiction-filter" onchange="updateFilter()">
-                        <option value="ALL">National Total</option>
-                        <option value="VIC">Victoria</option>
-                        <option value="NSW">New South Wales</option>
-                    </select>
-                </div>
+        <!-- Main Content Area -->
+        <main class="main-content">
+        <!-- Top Sticky Global Filter Bar -->
+        <header class="sticky-filter-bar">
+            <div class="filter-group">
+            <label for="filter-year">Year:</label>
+            <select id="filter-year">
+                <option value="All">All Years (2011-2021)</option>
+                <option value="2011">2011</option>
+                <option value="2012">2012</option>
+                <option value="2013">2013</option>
+                <option value="2014">2014</option>
+                <option value="2015">2015</option>
+                <option value="2016">2016</option>
+                <option value="2017">2017</option>
+                <option value="2018">2018</option>
+                <option value="2019">2019</option>
+                <option value="2020">2020</option>
+                <option value="2021">2021</option>
+            </select>
             </div>
 
-            <!-- D3 图表渲染挂载点 -->
-            <div id="chart-container"></div>
-        </div>
-    </main>
+            <div class="filter-group">
+            <label for="filter-state">State / Territory:</label>
+            <select id="filter-state">
+                <option value="All">All Jurisdictions</option>
+                <option value="NSW">New South Wales (NSW)</option>
+                <option value="Vic">Victoria (VIC)</option>
+                <option value="Qld">Queensland (QLD)</option>
+                <option value="WA">Western Australia (WA)</option>
+                <option value="SA">South Australia (SA)</option>
+                <option value="Tas">Tasmania (TAS)</option>
+                <option value="NT">Northern Territory (NT)</option>
+                <option value="ACT">Australian Capital Territory (ACT)</option>
+            </select>
+            </div>
 
-    <script>
-        // 默认加载 Q1
-        let currentSection = 'Q1';
-        loadChart('Q1');
+            <button id="reset-filters" class="btn-reset">Reset Filters</button>
+        </header>
 
-        // 切换侧边栏菜单项
-        function switchSection(section, btnElement) {
-            currentSection = section;
-            
-            // 切换按钮高亮状态
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            if(btnElement) {
-                btnElement.classList.add('active');
-            }
+        <!-- Top KPI Summary Cards -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+            <span class="kpi-label">Annual National Range</span>
+            <strong class="kpi-value">34,024 - 39,866</strong>
+            <span class="kpi-sub">Steady upward trajectory (2011-2021)</span>
+            </div>
+            <div class="kpi-card">
+            <span class="kpi-label">Largest User Share</span>
+            <strong class="kpi-value">32.87%</strong>
+            <span class="kpi-sub">Car Drivers (Highest absolute count)</span>
+            </div>
+            <div class="kpi-card">
+            <span class="kpi-label">Eastern States Share</span>
+            <strong class="kpi-value">~73%</strong>
+            <span class="kpi-sub">NSW, VIC & QLD combined burden</span>
+            </div>
+            <div class="kpi-card highlight">
+            <span class="kpi-label">First Nations Peak Age</span>
+            <strong class="kpi-value">17 - 25 yrs</strong>
+            <span class="kpi-sub">Highest hospitalisation concentration</span>
+            </div>
+        </section>
 
-            // 改变大标题
-            document.getElementById('chart-title').innerText = `${section} Visualization`;
+        <!-- Q1: National Trend -->
+        <section id="section-q1" class="story-card">
+            <div class="chart-area">
+            <h3>National non-fatal injuries fluctuated between 34k and 40k, dipping briefly in 2020</h3>
+            <p class="chart-subtitle">Annual hospitalised traffic injuries (2011–2021) with policy & pandemic annotations</p>
+            <div id="chart-q1" class="responsive-svg-container"></div>
+            </div>
+            <div class="insight-area">
+            <h4>Policy Takeaway (Q1)</h4>
+            <p>Despite policy adjustments in Victoria and New South Wales in <strong>2012 and 2017</strong>, national injury counts showed no decline, continuing a steady upward trajectory.</p>
+            <p>A noticeable drop occurred in <strong>2020</strong> due to pandemic mobility restrictions, followed by a rebound in <strong>2021</strong>.</p>
+            </div>
+        </section>
 
-            // 加载对应图表
-            loadChart(section);
-        }
+        <!-- Q2: Road Users -->
+        <section id="section-q2" class="story-card">
+            <div class="chart-area">
+            <h3>Car drivers account for 32.87% of cases, while vulnerable users face high proportional risk</h3>
+            <p class="chart-subtitle">Share of total hospitalised injuries by road user group (Direct labels)</p>
+            <div id="chart-q2" class="responsive-svg-container"></div>
+            </div>
+            <div class="insight-area">
+            <h4>Policy Takeaway (Q2)</h4>
+            <p>Replacing legacy pie charts with horizontal bars reveals clear distinctions across all road user segments without visual crowding.</p>
+            <p>While vehicle occupants dominate total volume, <strong>motorcyclists and pedal cyclists</strong> represent disproportionate vulnerability.</p>
+            </div>
+        </section>
 
-        function loadChart(section) {
-            // 清空当前图表容器
-            d3.select("#chart-container").html("");
+        <!-- Q3: Jurisdictional Comparison -->
+        <section id="section-q3" class="story-card">
+            <div class="chart-area">
+            <div class="chart-header-row">
+                <div>
+                <h3>Eastern states drive over 70% of national raw counts</h3>
+                <p class="chart-subtitle">Hospitalised injury counts across Australian states and territories</p>
+                </div>
+                <button id="toggle-per-capita" class="btn-toggle">Switch to Per 100k Population</button>
+            </div>
+            <div id="chart-container" class="responsive-svg-container"></div>
+            </div>
+            <div class="insight-area">
+            <h4>Policy Takeaway (Q3)</h4>
+            <p><strong>NSW, VIC, and QLD</strong> account for over 70%-75% of all hospitalisations, largely driven by population size.</p>
+            <p>Toggling to <strong>population-normalised rates</strong> uncovers elevated per-capita risks in smaller jurisdictions.</p>
+            </div>
+        </section>
 
-            // 根据不同的 Q 加载对应的逻辑
-            if (section === 'Q1') {
-                drawQ1LineChart();
-            } else if (section === 'Q2') {
-                drawQ2PieChart();
-            } else if (section === 'Q3') {
-                drawQ3Map();
-            } else if (section === 'Q4') {
-                drawQ4BarChart();
-            } else if (section === 'Q5') {
-                drawQ5BoxPlot();
-            }
-        }
+        <!-- Q4: First Nations Vulnerability -->
+        <section id="section-q4" class="story-card">
+            <div class="chart-area">
+            <h3>First Nations hospitalisations peak sharply in the 17-25 youth cohort</h3>
+            <p class="chart-subtitle">Age distribution of First Nations traffic injury hospitalisations</p>
+            <div id="chart-q4" class="responsive-svg-container"></div>
+            </div>
+            <div class="insight-area">
+            <h4>Policy Takeaway (Q4)</h4>
+            <p>First Nations traffic injury hospitalisations are heavily concentrated among young adults aged <strong>17 to 25</strong>.</p>
+            <p>Interventions must account for regional road conditions and culturally tailored youth driver safety programs.</p>
+            </div>
+        </section>
 
-        function drawQ1LineChart() {
-            const container = d3.select("#chart-container");
-            container.append("p").text("Loading Q1 Line Chart from KNIME CSV...");
-        }
+        <!-- Q5: Injury Severity & Care Burden -->
+        <section id="section-q5" class="story-card">
+            <div class="chart-area">
+            <h3>Motorcyclists experience higher median hospital bed days than car drivers</h3>
+            <p class="chart-subtitle">Distribution of days confined to bed (Median & Interquartile Range)</p>
+            <div id="chart-q5" class="responsive-svg-container"></div>
+            </div>
+            <div class="insight-area">
+            <h4>Policy Takeaway (Q5)</h4>
+            <p>Car driver data exhibit wider dispersion and higher skewness, reflecting a broad spectrum of crash severities.</p>
+            <p>However, <strong>motorcyclists record a higher median bed-day burden</strong>.</p>
+            </div>
+        </section>
+        </main>
+    </div>
 
-        function drawQ2PieChart() {
-            const container = d3.select("#chart-container");
-            container.append("p").text("Loading Q2 Pie Chart...");
-        }
-
-        function drawQ4BarChart() {
-            const container = d3.select("#chart-container");
-            container.append("p").text("Loading Q4 First Nations Bar Chart...");
-        }
-
-        function drawQ5BoxPlot() {
-            const container = d3.select("#chart-container");
-            container.append("p").text("Loading Q5 Severity Boxplot...");
-        }
-
-        function updateFilter() {
-            const selectedVal = document.getElementById("jurisdiction-filter").value;
-            console.log("User selected filter for " + currentSection + ":", selectedVal);
-        }
-    </script>
 </body>
 </html>

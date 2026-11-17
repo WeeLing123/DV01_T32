@@ -1,11 +1,9 @@
-function drawQ3Map() {
+function drawQ3Map(selectedYear = "All", selectedState = "All") {
     const container = d3.select("#chart-container");
+    container.selectAll("*").remove();
     container.html(""); //clear container
 
-    const filterSelect = d3.select("#jurisdiction-filter");
-    filterSelect.html(""); //clear filter select
-
-    const width = 800;
+    const width = Math.max(container.node().getBoundingClientRect().width, 400);
     const height = 500;
 
     // create svg container
@@ -40,20 +38,41 @@ function drawQ3Map() {
         "Western Australia": "WA"
     };
 
+    const stateCodes = [
+        "ACT", "NSW", "NT", "Qld",
+        "SA", "Tas", "Vic", "WA"
+    ];
+
+    let filteredData = [];
+    let displayTitle = "";
+
+    if (selectedYear === "All") {
+        filteredData = q3Data;
+        displayTitle = "All Years (2011-2021 Total)";
+    } else {
+        filteredData = q3Data.filter(d => String(d.year) === String(selectedYear));
+        displayTitle = `Year: ${selectedYear}`;
+    }
+
+    // Calculate the total (or per capita) for each state
+    const stateCases = {};
+    stateCodes.forEach(state => {
+        let rawSum = d3.sum(filteredData, d => Number(d[state]) || 0);
+        stateCases[state] = isPerCapita ? (rawSum / (statePop100k[state] || 1)) : rawSum;
+    });
+
+    // Calculate the maximum and minimum values ​​for color scaling.
+    const values = Object.values(stateCases);
+    const minVal = d3.min(values) || 0;
+    const maxVal = d3.max(values) || 1;
+
+    // Identify the state with the highest current value (for border highlighting)
+    const maxStateCode = Object.keys(stateCases).reduce((a, b) => stateCases[a] > stateCases[b] ? a : b, "");
+
     // Simultaneously load CSV data and stable Australian planar GeoJSON data
     Promise.all([
-        d3.csv("data/Q3_Stacked_Area_Chart(year, sum of state cases).csv"),
         d3.json("https://raw.githubusercontent.com/anthwri/GeoJson-Data/master/australian-states.json")
-    ]).then(([csvData, geojson]) => {
-        
-        //get year
-        const years = csvData.map(d => d["calendar year"]);
-        
-        filterSelect.append("option").attr("value", "ALL").text("All Years (2011-2021 Total)");
-        years.forEach(y => {
-            filterSelect.append("option").attr("value", y).text(y);
-        });
-
+    ]).then(([geojson]) => {
 
         // Use a standard 2D planar projection
         const projection = d3.geoMercator().fitSize([width - 80, height - 60], geojson);
@@ -61,54 +80,13 @@ function drawQ3Map() {
 
         // Blue gradient color scale
         const colorScale = d3.scaleSequential()
+            .domain([minVal, maxVal])
             .interpolator(d3.interpolateBlues);
 
         const mapGroup = svg.append("g");
         const labelGroup = svg.append("g");
 
-        drawLegend(svg, width, height);
-        const legendGroup = svg.select(".map-legend");
-
-        function updateMap(selectedFilter) {
-            let stateCases = {};
-            let displayTitle = "";
-
-            if(selectedFilter === "ALL"){
-                displayTitle = "All Years (2011-2021)";
-
-                csvData.forEach(row => {
-                    Object.keys(row).forEach(k => {
-                        if(k !== "calendar year"){
-                            stateCases[k] = (stateCases[k] || 0) + (+row[k]);
-                        }
-                    });
-                });
-            }else{
-                displayTitle = `Year: ${selectedFilter}`;
-                const rowData = csvData.find(d => d["calendar year"] === selectedFilter);
-                if(!rowData) return;
-                Object.keys(rowData).forEach(k => {
-                    if(k !== "calendar year"){
-                        stateCases[k] = +rowData[k];
-                    }
-                });
-            }
-            
-            //calculate min and max
-            const values = Object.values(stateCases);
-            const minVal = d3.min(values);
-            const maxVal = d3.max(values);
-            colorScale.domain([minVal, maxVal]);
-
-            //update legend values
-            legendGroup.select(".legend-low")
-                .text(minVal.toLocaleString());
-            
-            legendGroup.select(".legend-high")
-                .text(maxVal.toLocaleString());
-
-            //find current filter maximum state and highlight
-            let maxStateCode = Object.keys(stateCases).reduce((a, b) => stateCases[a] > stateCases[b] ? a : b, "");
+        drawLegend(svg, width, height, minVal, maxVal);
 
             mapGroup.selectAll("path")
                 .data(geojson.features)
@@ -118,6 +96,11 @@ function drawQ3Map() {
                     const props = d.properties;
                     const fullName = props.STATE_NAME || props.state_name || props.NAME || props.name || "";
                     const code = stateNameToCode[fullName] || fullName;
+
+                    // If a specific state is selected in the top filter, the unselected states can be visually dimmed.
+                    if (selectedState !== "All" && code !== selectedState) {
+                        return "#e2e8f0";
+                    }
                     const cases = stateCases[code] || 0;
                     return colorScale(cases);
                 })
@@ -137,10 +120,13 @@ function drawQ3Map() {
                     const props = d.properties;
                     const fullName = props.STATE_NAME || props.state_name || props.NAME || props.name || "";
                     const code = stateNameToCode[fullName] || fullName;
-                    const cases = stateCases[code] !== undefined ? stateCases[code].toLocaleString() : "N/A";
+                    const casesVal = stateCases[code];
+                    const formattedCases = casesVal !== undefined 
+                        ? (isPerCapita ? casesVal.toFixed(1) + " per 100k" : Math.round(casesVal).toLocaleString()) 
+                        : "N/A";
 
                     tooltip.style("visibility", "visible")
-                        .html(`<strong>${fullName} (${code})</strong><br>${displayTitle}<br>Cases: <strong>${cases}</strong>`);
+                        .html(`<strong>${fullName} (${code})</strong><br>${displayTitle}<br>Cases: <strong>${formattedCases}</strong>`);
                 })
                 .on("mousemove", (event) => {
                     tooltip.style("top", (event.clientY -15) + "px")
@@ -169,15 +155,6 @@ function drawQ3Map() {
                 .style("font-weight", "600")
                 .style("fill", "#0f172a")
                 .style("pointer-events", "none")
-            }
-
-        // Render all data by default
-        updateMap("ALL");
-
-        // Dynamically update map colors when switching the dropdown menu selection
-        filterSelect.on("change", function() {
-            updateMap(this.value);
-        });
 
     }).catch(error => {
         console.error("Error loading map data:", error);
