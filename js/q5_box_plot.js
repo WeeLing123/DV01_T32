@@ -40,6 +40,15 @@ function drawQ5boxplot(selectedYear = "All") {
     // Filter out rows where the number of bed-days is empty or non-numeric.
     data = data.filter(d => !isNaN(d.bedDays) && d.bedDays !== null && d.roadUser);
 
+    const globalRoadUserOrder = [
+        "Car Occupants",
+        "Motorcyclists",
+        "Pedal Cyclists",
+        "Pedestrians",
+        "Heavy Vehicles & Buses",
+        "Others"
+    ];
+
     // Group by 'Road User' category and calculate box plot statistics (Min, Q1, Median, Q3, Max)
     const groupedData = d3.rollup(
         data,
@@ -88,7 +97,7 @@ function drawQ5boxplot(selectedYear = "All") {
 
     // Scale Settings
     const x = d3.scaleBand()
-        .domain(boxData.map(d => d.group))
+        .domain(globalRoadUserOrder)
         .range([0, innerWidth])
         .padding(0.4);
 
